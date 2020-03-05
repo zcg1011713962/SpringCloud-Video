@@ -23,7 +23,6 @@ public class WebsocketServer {
 	private static NioEventLoopGroup bossGroup;
 
 	public ChannelFuture start(int port) {
-		logger.info("启动视频websocket服务");
 		// 接收连接线程组
 		bossGroup = new NioEventLoopGroup();
 		// 工作线程组

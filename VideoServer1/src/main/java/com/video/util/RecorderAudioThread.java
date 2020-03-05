@@ -16,7 +16,13 @@ import javax.sound.sampled.TargetDataLine;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.FrameRecorder.Exception;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
+
 public class RecorderAudioThread implements Runnable {
+	private static final ByteBufAllocator ALLOC = UnpooledByteBufAllocator.DEFAULT;
 	private volatile FFmpegFrameRecorder recorder = null;
 	public volatile Boolean sign=false;
 	public RecorderAudioThread(FFmpegFrameRecorder recorder) {
@@ -45,6 +51,7 @@ public class RecorderAudioThread implements Runnable {
 		// 通过line可以获得更多控制权
 		// 获取设备：TargetDataLine line
 		TargetDataLine line = null;
+		ShortBuffer sBuff = null;
 		try {
 			line = (TargetDataLine) AudioSystem.getLine(dataLineInfo);
 			line.open(audioFormat);
@@ -59,14 +66,16 @@ public class RecorderAudioThread implements Runnable {
 			int nBytesRead=0;
 			int nSamplesRead=0;
 			short[] samples;
-			ShortBuffer sBuff;
 			while((nBytesRead=line.read(audioBytes, 0, line.available()))!=-1) {// 非阻塞方式读取
+				    sBuff.clear();
 					if(sign) {
 						break;
 					}
 					// 因为我们设置的是16位音频格式,所以需要将byte[]转成short[]
 					nSamplesRead = nBytesRead / 2;
 					samples = new short[nSamplesRead];
+					
+					//ByteBuf byteBuf = Unpooled.wrappedBuffer(audioBytes);
 					/**
 					 * ByteBuffer.wrap(audioBytes)-将byte[]数组包装到缓冲区
 					 * ByteBuffer.order(ByteOrder)-按little-endian修改字节顺序，解码器定义的
@@ -90,6 +99,9 @@ public class RecorderAudioThread implements Runnable {
 				line.close();
 				line=null;
 				System.out.println("关闭读取音频");
+			}
+			if(sBuff!=null) {
+				sBuff.clear();
 			}
 		}
 	}
