@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.login.pojo.RequestFileInfo;
 import com.login.pojo.User;
 import com.login.util.MapUtil;
-import com.login.util.NettyUtil;
 
 import io.netty.channel.Channel;
 @Controller
@@ -34,11 +33,6 @@ public class FileUploadController {
         User user = (User)session.getAttribute("user");
         String loginName = user.getLoginname();
         Channel channel = MapUtil.getchannlMap().get(loginName);
-        if(loginName!=null&&channel==null) {
-        	NettyUtil nettyUtil = new NettyUtil();
-     		channel = nettyUtil.createChannel();
-     		MapUtil.getchannlMap().put(loginName, channel);
-        }
         
         try {
         	File f = new File(file.getOriginalFilename());

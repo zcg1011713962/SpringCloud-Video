@@ -11,7 +11,6 @@ public class IpFilter extends ZuulFilter {
 	//是否执行该过滤器，true 为执行，false 为不执行，这个也可以利用配置中心来实现，达到动态的开启和关闭过滤器
 	@Override
 	public boolean shouldFilter() {
-		// TODO Auto-generated method stub
 		return true;
 	}
 	//执行自己的业务逻辑
@@ -19,10 +18,11 @@ public class IpFilter extends ZuulFilter {
 	public Object run() throws ZuulException {
 		RequestContext ctx = RequestContext.getCurrentContext();
         String ip = IPUtils.getIpAddress(ctx.getRequest());
-        System.out.println("黑名单过滤器ip"+ip);
 		// 在黑名单中禁用
         if (StringUtils.isBlank(ip)) {
+        	System.out.println("黑名单ip"+ip);
         	//在 RequestContext 中设置一个值来标识是否成功，当为 true 的时候，后续的过滤器才执行，若为 false 则不执行。
+        	ctx.set("isSuccess", false);
             ctx.setSendZuulResponse(false);
             ctx.getResponse().setContentType("application/json; charset=utf-8");
             return null;
