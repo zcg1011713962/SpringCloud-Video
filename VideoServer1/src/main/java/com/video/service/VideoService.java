@@ -1,23 +1,28 @@
 package com.video.service;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 import org.bytedeco.javacpp.opencv_core.IplImage;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber.Exception;
-import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameGrabber;
-import org.bytedeco.javacv.OpenCVFrameConverter.ToIplImage;
+import org.springframework.stereotype.Component;
 
 import com.video.util.Grabber;
 import com.video.util.Recorder;
 import com.video.util.RecorderAudioThread;
 import com.video.util.RecorderVideoThread;
-
+@Component
 public class VideoService {
-	private static ConcurrentHashMap<String, RecorderVideoThread> recorderVideoMap = new ConcurrentHashMap<String,RecorderVideoThread>();
-	private static ConcurrentHashMap<String, RecorderAudioThread> recorderAudioMap = new ConcurrentHashMap<String,RecorderAudioThread>();
+	public static ConcurrentHashMap<String, RecorderVideoThread> recorderVideoMap = new ConcurrentHashMap<String,RecorderVideoThread>();
+	public static ConcurrentHashMap<String, RecorderAudioThread> recorderAudioMap = new ConcurrentHashMap<String,RecorderAudioThread>();
+	private static Thread videoThread;
+	private static Thread audioThread;
+	/*public static void main(String[] args) {
+		doService("666",true);
+	}*/
 	public static void doService(String channelId,Boolean flag){
 		if(flag) {//开启录制线程
 			Frame grabFrame= null;
@@ -34,14 +39,18 @@ public class VideoService {
 			}
 			//每个用户一个录制器
 			FFmpegFrameRecorder recorder = new Recorder().startRecorder(grabImage.width(), grabImage.height(), channelId);
+			//控制器
+			CountDownLatch countDownLatch = new CountDownLatch(1);
 			//启动一个线程录制视频
-			RecorderVideoThread recorderVideo = new RecorderVideoThread(grabber,recorder);
+			RecorderVideoThread recorderVideo = new RecorderVideoThread(grabber,recorder,countDownLatch);
 			recorderVideoMap.put(channelId, recorderVideo);
-			new Thread(recorderVideo,"RecorderVideo"+channelId).start();
+			videoThread = new Thread(recorderVideo,"RecorderVideo"+channelId);
+			videoThread.start();
 			//启动一个线程录制音频
-			RecorderAudioThread recorderAudio = new RecorderAudioThread(recorder);
+			RecorderAudioThread recorderAudio = new RecorderAudioThread(recorder,countDownLatch);
 			recorderAudioMap.put(channelId, recorderAudio);
-			new Thread(recorderAudio,"RecorderAudio"+channelId).start();
+			audioThread=new Thread(recorderAudio,"RecorderAudio"+channelId);
+			audioThread.start();
 		}else {//关闭录制线程
 			RecorderVideoThread recorderVideo = recorderVideoMap.get(channelId);
 			RecorderAudioThread recorderAudio = recorderAudioMap.get(channelId);
@@ -49,8 +58,16 @@ public class VideoService {
 			recorderAudio.sign=true;
 			recorderVideoMap.remove(channelId);
 			recorderAudioMap.remove(channelId);
-			recorderVideo=null;
-			recorderAudio=null;
+			try {
+				videoThread.join();
+				audioThread.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}finally {
+				System.out.println("置空");
+				recorderVideo=null;
+				recorderAudio=null;
+			}
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package com.video.websocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.video.service.VideoService;
 
@@ -20,6 +21,7 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<TextWebSocketF
 	private static Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 	 //保留所有与服务器建立连接的channel对象
     private static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    
 	@Override
 	public void handlerAdded(ChannelHandlerContext ctx) {
 		System.out.println("websocketserver handlerAdded"+ctx.channel());

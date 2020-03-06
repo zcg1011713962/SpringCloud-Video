@@ -3,6 +3,7 @@ package com.video.util;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +26,10 @@ public class RecorderAudioThread implements Runnable {
 	private static final ByteBufAllocator ALLOC = UnpooledByteBufAllocator.DEFAULT;
 	private volatile FFmpegFrameRecorder recorder = null;
 	public volatile Boolean sign=false;
-	public RecorderAudioThread(FFmpegFrameRecorder recorder) {
+	private CountDownLatch countDownLatch;
+	public RecorderAudioThread(FFmpegFrameRecorder recorder,CountDownLatch countDownLatch) {
 		this.recorder = recorder;
+		this.countDownLatch=countDownLatch;
 	}
 	public void setSign(Boolean sign) {
 		this.sign = sign;
@@ -67,7 +70,9 @@ public class RecorderAudioThread implements Runnable {
 			int nSamplesRead=0;
 			short[] samples;
 			while((nBytesRead=line.read(audioBytes, 0, line.available()))!=-1) {// 非阻塞方式读取
-				    sBuff.clear();
+					if(sBuff!=null) {
+					   sBuff.clear();
+					}
 					if(sign) {
 						break;
 					}
@@ -94,15 +99,16 @@ public class RecorderAudioThread implements Runnable {
 			e1.printStackTrace();
 		} catch (Exception e2) {
 			e2.printStackTrace();
-		} finally {
+		}finally {
 			if(line!=null) {
 				line.close();
 				line=null;
-				System.out.println("关闭读取音频");
+				System.out.println("已关闭读取音频");
 			}
 			if(sBuff!=null) {
 				sBuff.clear();
 			}
+			countDownLatch.countDown();
 		}
 	}
 
