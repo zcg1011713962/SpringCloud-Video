@@ -16,10 +16,11 @@ import com.video.util.RecorderAudioThread;
 import com.video.util.RecorderVideoThread;
 @Component
 public class VideoService {
+	//后期放到redis
 	public static ConcurrentHashMap<String, RecorderVideoThread> recorderVideoMap = new ConcurrentHashMap<String,RecorderVideoThread>();
 	public static ConcurrentHashMap<String, RecorderAudioThread> recorderAudioMap = new ConcurrentHashMap<String,RecorderAudioThread>();
-	private static Thread videoThread;
-	private static Thread audioThread;
+	public static ConcurrentHashMap<String, Thread> recorderVideoThreadMap = new ConcurrentHashMap<String,Thread>();
+	public static ConcurrentHashMap<String, Thread> recorderAudioThreadMap = new ConcurrentHashMap<String,Thread>();
 	/*public static void main(String[] args) {
 		doService("666",true);
 	}*/
@@ -44,16 +45,20 @@ public class VideoService {
 			//启动一个线程录制视频
 			RecorderVideoThread recorderVideo = new RecorderVideoThread(grabber,recorder,countDownLatch);
 			recorderVideoMap.put(channelId, recorderVideo);
-			videoThread = new Thread(recorderVideo,"RecorderVideo"+channelId);
+			Thread videoThread = new Thread(recorderVideo,"RecorderVideo"+channelId);
+			recorderVideoThreadMap.put(channelId, videoThread);
 			videoThread.start();
 			//启动一个线程录制音频
 			RecorderAudioThread recorderAudio = new RecorderAudioThread(recorder,countDownLatch);
 			recorderAudioMap.put(channelId, recorderAudio);
-			audioThread=new Thread(recorderAudio,"RecorderAudio"+channelId);
+			Thread audioThread=new Thread(recorderAudio,"RecorderAudio"+channelId);
+			recorderAudioThreadMap.put(channelId, audioThread);
 			audioThread.start();
 		}else {//关闭录制线程
 			RecorderVideoThread recorderVideo = recorderVideoMap.get(channelId);
 			RecorderAudioThread recorderAudio = recorderAudioMap.get(channelId);
+			Thread videoThread = recorderVideoThreadMap.get(channelId);
+			Thread audioThread = recorderAudioThreadMap.get(channelId);
 			recorderVideo.sign=true;
 			recorderAudio.sign=true;
 			recorderVideoMap.remove(channelId);
